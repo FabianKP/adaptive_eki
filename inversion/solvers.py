@@ -84,7 +84,7 @@ class EnsembleMode:
         self.n = cov.shape[1]
         self.cov = cov
         self.epsilon = "auto"
-        self.j = options.setdefault("j", 100)
+        self.j = options.setdefault("j1", 100)
         self.sampling = options.setdefault("sampling", "ensemble")
         if self.sampling == "ensemble":
             self._init_ensemble(cov)

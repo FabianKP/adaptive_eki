@@ -3,13 +3,13 @@
 import matplotlib.pyplot as plt
 import scipy.linalg as scilin
 
-from inversion.localized_covariance import cov_loc
+from inversion.ornstein_uhlenbeck import ornstein_uhlenbeck
 
 
 n = 1000
 sigma = 1e-6
 
-p = cov_loc(n, sigma)
+p = ornstein_uhlenbeck(n, sigma)
 
 d, u = scilin.eigh(p)
 

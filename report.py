@@ -38,14 +38,14 @@ delta = np.linalg.norm(y - y_true)
 n = n1 * n2
 
 prior_mean = np.zeros(n)
-c = cov_loc(n, h, kernel="exponential")
+c = ornstein_uhlenbeck(n, h)
 
 # ITERATIVE TIKHONOV REGULARIZATION
 options = {"parallel": use_ray, "alpha": alpha0, "delta": delta, "tau": tau}
 x_tik, alpha_delta = solve("iterative_tikhonov", "deterministic", fwd, y, mean=prior_mean, options=options)
 
 # ADAPTIVE SVD-EKI
-options["j"] = j0
+options["j1"] = j0
 options["sampling"] = "svd"
 x_eki, list = solve("adaptive_eki", "ensemble", fwd, y, mean=prior_mean, cov=c, options=options)
 

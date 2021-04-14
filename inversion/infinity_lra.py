@@ -8,11 +8,11 @@ import numpy as np
 
 def infinity_lra(m, u0):
     """
-    Computes a good j-rank approximation of m in the j-infinity norm.
+    Computes a good j1-rank approximation of m in the j1-infinity norm.
     See Gillis and Shitov, 2017.
     :return:
     """
-    print(f"Initial j-infinity error: {np.linalg.norm(m - u0 @ u0.T, ord=np.inf)}")
+    print(f"Initial j1-infinity error: {np.linalg.norm(m - u0 @ u0.T, ord=np.inf)}")
     u = u0
     # iterate multiple times and see if anything changes
     converged = False
@@ -28,15 +28,15 @@ def infinity_lra(m, u0):
             converged = True
             break
     if not converged:
-        print("WARNING: j-infinity LRA did not converge. Something is wrong!!!")
-    print(f"j-infinity error: {np.linalg.norm(m - u @ u.T, ord=np.inf)}")
+        print("WARNING: j1-infinity LRA did not converge. Something is wrong!!!")
+    print(f"j1-infinity error: {np.linalg.norm(m - u @ u.T, ord=np.inf)}")
     return u
 
 
 
 def secant(m, u):
     """
-    Computes v[j] = min_v max_i |r[i,j] - u[i]v
+    Computes v[j1] = min_v max_i |r[i,j1] - u[i]v
     :param m: (n,n) matrix
     :param u: (n,) vector
     :return: v, an (n,) vector

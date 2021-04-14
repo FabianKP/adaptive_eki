@@ -19,7 +19,7 @@ class IterativeTikhonov(Solver):
             alpha = alpha_list[0]
             maxiter = len(alpha_list)
             delta = 0.
-        c = self.options.setdefault("c", 0.8)
+        c = self.options.setdefault("c0", 0.8)
         tau = self.options.setdefault("tau", 1.5)
         # the actual computation starts
         a = self.mode.a()

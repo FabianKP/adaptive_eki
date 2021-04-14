@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Generates all plots for the kalman-paper.
+# Generates all plots for the .
 # Needs to be executed in the numerics-directory.
 
 python3 shepp_logan_test.py

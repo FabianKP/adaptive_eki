@@ -13,15 +13,15 @@ class AdaptiveEKI(Solver):
         alpha = self.options.setdefault("alpha", 1.)
         delta = self.options["delta"]
         sampling = self.options["sampling"]
-        c = self.options.setdefault("c", 0.8)
+        c = self.options.setdefault("c0", 0.8)
         tau = self.options.setdefault("tau", 1.)
-        j0 = self.mode.j
+        j0 = self.mode.j1
         x = self.mean
         x_list = []
         # the actual computation starts
         for k in range(maxiter):
             print("Iteration ", k + 1)
-            print("Ensemblesize: ", self.mode.j)
+            print("Ensemblesize: ", self.mode.j1)
             a = self.mode.a()
             b = self._b(a)
             btb = b.T @ b
@@ -38,10 +38,10 @@ class AdaptiveEKI(Solver):
             else:
                 alpha *= c
                 if sampling == "ensemble":
-                    self.mode.j = np.ceil(j0 / (alpha**2)).astype(int)
+                    self.mode.j1 = np.ceil(j0 / (alpha ** 2)).astype(int)
                 else:
-                    self.mode.j = np.ceil(j0 / alpha).astype(int)
+                    self.mode.j1 = np.ceil(j0 / alpha).astype(int)
                 # if the sample size is larger than the state dimension, it makes no sense.
-                if self.mode.j >= self.mean.size:
+                if self.mode.j1 >= self.mean.size:
                     break
         return x, x_list

@@ -53,7 +53,7 @@ n = n1*n1
 print(n)
 ensemblesize = 1500
 id = np.identity(n)
-test = EnsembleMode(covroot = id, options={"j": ensemblesize})
+test = EnsembleMode(covroot = id, options={"j1": ensemblesize})
 
 
 # generate covariance approximation with straightforward sampling
@@ -74,7 +74,7 @@ a3, r = np.linalg.qr(a1)
 c3 = a3 @ a3.T
 r3 = id - c3
 
-# and with a deterministic approximation based on minimizing the j-infinity error
+# and with a deterministic approximation based on minimizing the j1-infinity error
 a4 = test._deterministic()
 c4 = a4 @ a4.T
 r4 = id - c4
@@ -104,15 +104,15 @@ def foerstner(x):
     return dist
 
 # evaluate some norms
-print("NORM | CLASSICAL SAMPLING | NEW SAMPLING TECHNIQUE | ORTHOGONALIZED SAMPLING | j-infinity minimization | tridiagonal")
+print("NORM | CLASSICAL SAMPLING | NEW SAMPLING TECHNIQUE | ORTHOGONALIZED SAMPLING | j1-infinity minimization | tridiagonal")
 print(f"l2 | {norm(r1)} | {norm(r2)} | {norm(r3)} | {norm(r4)} | {norm(r5)}")
 print(f"l1 | {norm(r1, ord=1)} | {norm(r2, ord=1)} | {norm(r3, ord=1)} | {norm(r4, ord=1)} | {norm(r5, ord=1)}")
-print(f"j-infinity | {norm(r1, ord=np.inf)} | {norm(r2, ord=np.inf)} | {norm(r3, ord=np.inf)} | {norm(r4, ord=np.inf)} | {norm(r5, ord=np.inf)}")
+print(f"j1-infinity | {norm(r1, ord=np.inf)} | {norm(r2, ord=np.inf)} | {norm(r3, ord=np.inf)} | {norm(r4, ord=np.inf)} | {norm(r5, ord=np.inf)}")
 print(f"Frobenius | {norm(r1, ord='fro')} | {norm(r2, ord='fro')} | {norm(r3, ord='fro')} | {norm(r4, ord='fro')} | {norm(r5, ord='fro')}")
 print(f"Entrywise-l1 | {l1_vector(r1)} | {l1_vector(r2)} | {l1_vector(r3)} | {l1_vector(r4)} | {l1_vector(r5)}")
 #print(f"Nuclear | {norm(r1, ord='nuc')} | {norm(r2, ord='nuc')} | {norm(r3, ord='nuc')} | {norm(r4, ord='nuc')}")
-print(f"Entrywise j-inf | {np.max(r1.flatten())} | {np.max(r2.flatten())} | {np.max(r3.flatten())} | {np.max(r4.flatten())} | {np.max(r5.flatten())}")
-#print(f"j negative 2 | {norm(r1, ord=-2)} | {norm(r2, ord=-2)} | {norm(r3, ord=-2)} | {norm(r4, ord=-2)}")
+print(f"Entrywise j1-inf | {np.max(r1.flatten())} | {np.max(r2.flatten())} | {np.max(r3.flatten())} | {np.max(r4.flatten())} | {np.max(r5.flatten())}")
+#print(f"j1 negative 2 | {norm(r1, ord=-2)} | {norm(r2, ord=-2)} | {norm(r3, ord=-2)} | {norm(r4, ord=-2)}")
 print(f"Rank | {matrix_rank(r1)} | {matrix_rank(r2)} | {matrix_rank(r3)} | {matrix_rank(r4)} | {matrix_rank(r5)}")
 print(f"Foerstner | {foerstner(c1)} | {foerstner(c2)} | {foerstner(c3)} | {foerstner(c4)} | {foerstner(r5)}")
 

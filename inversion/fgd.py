@@ -32,7 +32,7 @@ def fgd(c, u0, lam, eta, tau, maxiter):
 def objective(x, c, tau, lam):
     """
     Evaluates the objective function
-    f(x) = sigma(c - x, tau) + lam*np.norm(x)**2
+    f(x) = sigma(c0 - x, tau) + lam*np.norm(x)**2
     :param x: a symmetric positive (n,n) array
     :param tau: a positive scalar
     :param lam: the regularization parameter, a positive scalar

@@ -1,2 +1,4 @@
 .idea/
 venv/
+covloc_test.py
+report.py
