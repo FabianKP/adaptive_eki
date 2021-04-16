@@ -13,10 +13,16 @@ def ornstein_uhlenbeck(n, h=0.1):
     :param h: the correlation length; small h corresponds to the assumption that distant pixels are uncorrelated
     :return: cov - the Ornstein-Uhlenbeck covariance matrix, an ndarray of shape (n,n)
     """
-    cov = np.ones((n, n))
+    # compute all positions
+    p = np.zeros((n, 2))
     for i in range(n):
-        for j in range(n):
-            cov[i,j] = math.exp(-np.linalg.norm(_pos(i, n) - _pos(j, n)) / h)
+        p[i, :] = _pos(i,n)
+
+    pdiff0 = np.subtract.outer(p[:,0], p[:,0])
+    pdiff1 = np.subtract.outer(p[:,1], p[:,1])
+    pdiff = np.dstack((pdiff0, pdiff1))
+    diffnorm = np.linalg.norm(pdiff, axis=2)
+    cov = np.exp(-diffnorm / h)
     return cov
 
 def _pos(i, n):

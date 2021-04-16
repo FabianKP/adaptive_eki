@@ -37,7 +37,7 @@ print(f"Parameter dimension: n={n}")
 print(f"Measurement dimension: m={m}")
 
 # Set up x0 and c0
-x_bar = np.zeros(n)
+x0 = np.zeros(n)
 c0 = ornstein_uhlenbeck(n, h)
 
 # create list of alphas
@@ -51,16 +51,16 @@ prior_mean = np.zeros(n)
 cov = ornstein_uhlenbeck(n, h)
 
 # compute Tikhonov-regularized solutions
-options = {"parallel": use_ray, "alpha_list": alphas, "return_list": True, "j1": j}
-traj_tik = solve("iterative_tikhonov", "deterministic", fwd, y_hat, mean=prior_mean, cov=cov, options=options)
+options = {"parallel": use_ray, "j": j}
+traj_tik = tikhonov_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 
 # computed direct EKI solutions
-options["sampling"] = "ensemble"
-traj_std  = solve("iterative_tikhonov", "ensemble", fwd, y_hat, mean=prior_mean, cov=cov, options=options)
+options["sampling"] = "standard"
+traj_std  = eki_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 options["sampling"] = "nystroem"
-traj_nys = solve("iterative_tikhonov", "ensemble", fwd, y_hat, mean=prior_mean, cov=cov, options=options)
+traj_nys = eki_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 options["sampling"] = "svd"
-traj_svd = solve("iterative_tikhonov", "ensemble", fwd, y_hat, mean=prior_mean, cov=cov, options=options)
+traj_svd = eki_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 
 # compute approximation errors
 traj_std = np.array(traj_std)

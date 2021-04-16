@@ -3,45 +3,65 @@
 import numpy as np
 import scipy.linalg as scilin
 
-from inversion.solvers import Solver
+from inversion.solver import EnsembleSolver
+
+def adaptive_eki(fwd, y, x0, c0, delta, options):
+    """
+    Implements the adaptive EKI method
+    :param fwd: The forward operator.
+    :param y: The measurement.
+    :param x0: The initial guess.
+    :param c0: The regularization matrix. Needs to have shape (n,n), where n is the size of x0.
+    :param delta: The noise level.
+    :param options:
+        - maxiter: Maximum number of iterations
+        - sampling: Type of sampling, see EnsembleSolver.
+        - alpha1: The initial regularization parameter.
+        - c: A constant that determines the sequence of regularization paramters. The regularization parameter
+        alpha is updated by setting alpha = c*alpha.
+        - tau: The 'fudge paramter' for the discrepancy principle. Should be larger than 1.
+    :return trajectory, alpha: Returns the whole iteration as a list of numpy vectors. The last entry is the final estimate,
+    which satisfies the discrepancy principle. Also returns the final regularization parameter alpha.
+    """
+    aeki = AdaptiveEKI(fwd, y, x0, c0, delta, options)
+    trajectory, alpha = aeki.solve()
+    return trajectory, alpha
 
 
-class AdaptiveEKI(Solver):
+class AdaptiveEKI(EnsembleSolver):
+    def __init__(self, fwd, y, x0, c0, delta, options):
+        EnsembleSolver.__init__(self, fwd, y, x0, c0, options)
+        self._delta = delta
 
     def solve(self):
-        maxiter = self.options.setdefault("maxiter", 100)
-        alpha = self.options.setdefault("alpha", 1.)
-        delta = self.options["delta"]
-        sampling = self.options["sampling"]
-        c = self.options.setdefault("c0", 0.8)
-        tau = self.options.setdefault("tau", 1.)
-        j0 = self.mode.j1
-        x = self.mean
-        x_list = []
+        maxiter = self._options.setdefault("maxiter", 100)
+        alpha = self._options.setdefault("alpha1", 1.)
+        sampling = self._options["sampling"]
+        c = self._options.setdefault("c", 0.8)
+        tau = self._options.setdefault("tau", 1.2)
+        j1 = self._j
+        trajectory = []
         # the actual computation starts
         for k in range(maxiter):
             print("Iteration ", k + 1)
-            print("Ensemblesize: ", self.mode.j1)
-            a = self.mode.a()
-            b = self._b(a)
-            btb = b.T @ b
-            rhs = b.T @ (self.y - self.fwd(self.mean))
-            w = scilin.solve(btb + alpha*np.identity(btb.shape[0]), rhs, assume_a='pos')
-            x = self.mean + a @ w
-            x_list.append(x)
+            print("Sample size: ", self._j)
+            # compute next step
+            x_k = self._regularized_solution(self._a, alpha)
+            trajectory.append(x_k)
             # check discrepancy
-            discrepancy = np.linalg.norm(self.y - self.fwd(x))
-            print("Alpha: ", alpha)
+            discrepancy = np.linalg.norm(self._y - self._fwd(x_k))
+            print("alpha: ", alpha)
             print("Discrepancy: ", discrepancy)
-            if discrepancy < tau * delta:
+            if discrepancy < tau * self._delta:
                 break
             else:
                 alpha *= c
-                if sampling == "ensemble":
-                    self.mode.j1 = np.ceil(j0 / (alpha ** 2)).astype(int)
+                if sampling == "standard":
+                    self._j = np.ceil(j1 / (alpha ** 2)).astype(int)
                 else:
-                    self.mode.j1 = np.ceil(j0 / alpha).astype(int)
-                # if the sample size is larger than the state dimension, it makes no sense.
-                if self.mode.j1 >= self.mean.size:
+                    self._j = np.ceil(j1 / alpha).astype(int)
+                # It makes no sense to continue the iteration when the sample size is larger than the
+                # parameter dimension.
+                if self._j >= self._x0.size:
                     break
-        return x, x_list
+        return trajectory, alpha

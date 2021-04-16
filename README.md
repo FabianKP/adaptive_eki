@@ -3,7 +3,9 @@ This repository contains code accompanying the paper "On convergence rates of en
 
 You can reproduce all figures at once by executing the script "make_plots.sh". 
 Depending on your computer, this might take considerable time.
-The figures will not look exactly the same since the algorithms are stochastic.
+The figures will not look exactly the same since the algorithms are stochastic. 
+Also note that the implementation is not optimized for speed. In particular, the
+implementation is not suited for comparing the wallclock times of the different methods.
 
 # Requirements #
 

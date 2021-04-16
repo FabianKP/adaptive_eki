@@ -38,17 +38,16 @@ c0 = ornstein_uhlenbeck(n, h)
 # determine a good value for the regularization parameter alpha using the discrepancy principle
 # and Tikhonov regularization
 options = {"parallel": use_ray, "alpha": alpha0, "delta": delta, "tau": tau}
-x_tik, alpha = solve("iterative_tikhonov", "deterministic", fwd, y_hat, mean=x0, options=options)
-
-im_tik = np.reshape(x_tik, (n1, n2))
-options["alpha"] = alpha
+x_tik, alpha = iterative_tikhonov(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
+im_tik = np.reshape(x_tik[-1], (n1, n2))
 
 # next, apply Nyström-EKI with different sample sizes
+options["alpha"] = alpha
 options["sampling"] = "nystroem"
 nys_images = []
 for j in j_values:
-    options["j1"] = j
-    x_nys = solve("tikhonov", "ensemble", fwd, y_hat, mean=x0, cov=c0, options=options)
+    options["j"] = j
+    x_nys = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
     im_nys = np.reshape(x_nys, (n1, n2))
     nys_images.append(im_nys)
 

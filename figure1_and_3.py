@@ -16,7 +16,7 @@ snr = 10.               # sets the signal-to-noise ratio for the simulated data
 alpha0 = 1              # initial regularization parameter
 j = 2000                # sample size
 h = 1e-3                # correlation length for the prior covariance
-scaling_factor = 0.25   # this factor determines the size of the used image and thereby the parameter and measurement dimension
+scaling_factor = 0.15   # this factor determines the size of the used image and thereby the parameter and measurement dimension
 
 # obtain data
 y_hat_im, x_im, fwd, delta = simulate_measurement(snr, scaling_factor)
@@ -34,7 +34,9 @@ print(f"Initial ensemble size: j1={j}")
 
 # create x0 and c0
 x0 = np.zeros(n)
+print("Computing covariance matrix")
 c0 = ornstein_uhlenbeck(n, h)
+print("Done.")
 
 ## RECONSTRUCT THE IMAGE FROM THE NOISY MEASUREMENT USING EKI:
 
@@ -42,15 +44,15 @@ c0 = ornstein_uhlenbeck(n, h)
 # and Tikhonov regularization
 tau = 1.2
 options = {"parallel": use_ray, "alpha": alpha0, "delta": delta, "tau": tau}
-x_tik, alpha_delta = solve("iterative_tikhonov", "deterministic", fwd, y_hat, mean=x0, options=options)
+x_tik, alpha_delta = iterative_tikhonov(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
 
 # next, compute EKI reconstructions first with Standard-EKI, then with Nyström-EKI
 options["alpha"] = alpha_delta
-options["j1"] = j
-options["sampling"] = "ensemble"
-x_std = solve("tikhonov", "ensemble", fwd, y_hat, mean=x0, cov=c0, options=options)
+options["j"] = j
+options["sampling"] = "standard"
+x_std = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
 options["sampling"] = "nystroem"
-x_nys = solve("tikhonov", "ensemble", fwd, y_hat, mean=x0, cov=c0, options=options)
+x_nys = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
 
 # plot the original image and the reconstructions
 im_std = np.reshape(x_std, (n_1, n_2))

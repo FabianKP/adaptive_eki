@@ -46,17 +46,17 @@ options = {"parallel": use_ray, "alpha": alpha0, "delta": delta, "tau": tau}
 ## PERFORM NUMERICAL EXPERIMENT
 
 # apply adaptive Standard-EKI
-options["j1"] = j1
-options["sampling"] = "ensemble"
+options["j"] = j1
+options["sampling"] = "standard"
 options["c0"] = sqrt(q)
-x_std, traj_std = solve("adaptive_eki", "ensemble", fwd, y_hat, mean=x0, cov=c0, options=options)
+x_std, traj_std = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
 # apply adaptive Nyström-EKI
 options["c0"] = q
 options["sampling"] = "nystroem"
-x_nys, traj_nys = solve("adaptive_eki", "ensemble", fwd, y_hat, mean=x0, cov=c0, options=options)
+x_nys, traj_nys = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
 # apply adaptive SVD-EKI
 options["sampling"] = "svd"
-x_svd, traj_svd = solve("adaptive_eki", "ensemble", fwd, y_hat, mean=x0, cov=c0, options=options)
+x_svd, traj_svd = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
 
 
 def e_rel(x_hat):

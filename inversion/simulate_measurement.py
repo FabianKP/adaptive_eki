@@ -13,9 +13,9 @@ def simulate_measurement(snr, scaling_factor, ):
     :param snr: the desired signal-to-noise ratio
     :param scaling_factor: a scaling factor that determines the size of the image, and thereby also the parameter
     and measurement dimension
-    :return: y_hat_im, x_im, fwd, delta
+    :return: y_hat_im, x_im, _fwd, delta
     where y_hat_im is the noisy measurement (in image format), x_im is the original image,
-    fwd is the flattened forward operator (i.e. the radon transform taking vectors as input and output)
+    _fwd is the flattened forward operator (i.e. the radon transform taking vectors as input and output)
     and delta is the noise level.
     """
     # load and rescale Shepp-Logan phantom

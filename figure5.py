@@ -1,7 +1,7 @@
 """
 Executing this file reproduces figure 5 from the paper.
 For fixed regularization parameter alpha, the error between
-Tikhonov regularization and Standard-, Nyström-, and SVD-EKI is plottedfor varying sample size J
+Tikhonov regularization and Standard-, Nyström-, and SVD-EKI is plotted for varying sample size J
 """
 
 
@@ -34,13 +34,13 @@ print(f"Parameter dimension: n={n}")
 print(f"Measurement dimension: m={m}")
 
 # Set up x0 and c0
-x_bar = np.zeros(n)
+x0 = np.zeros(n)
 c0 = ornstein_uhlenbeck(n, h)
 
 # determine a good value for the regularization parameter alpha using the discrepancy principle
 # and Tikhonov regularization
 options = {"alpha": alpha, "parallel": use_ray}
-x_tik = solve("tikhonov", "deterministic", fwd, y_hat, mean=x_bar, cov=c0, options=options)
+x_tik = tikhonov(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha, options=options)
 
 # apply EKI
 traj_std = []
@@ -50,14 +50,14 @@ sizes = [100, 500, 1000, 1500, 2000, 2500, 3000, 5000, 8000]
 for j in sizes:
     options["j"] = j
     print("Sample size: ", j)
-    options["sampling"] = "ensemble"
-    x_std = solve("tikhonov", "ensemble", fwd, y_hat, mean=x_bar, cov=c0, options=options)
+    options["sampling"] = "standard"
+    x_std = direct_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha, options=options)
     traj_std.append(x_std)
     options["sampling"] = "nystroem"
-    x_nys = solve("tikhonov", "ensemble", fwd, y_hat, mean=x_bar, cov=c0, options=options)
+    x_nys = direct_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha, options=options)
     traj_nys.append(x_nys)
     options["sampling"] = "svd"
-    x_svd = solve("tikhonov", "ensemble", fwd, y_hat, mean=x_bar, cov=c0, options=options)
+    x_svd = direct_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha, options=options)
     traj_svd.append(x_svd)
 
 # compute approximation errors

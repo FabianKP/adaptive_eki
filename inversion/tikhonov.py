@@ -1,19 +1,21 @@
+"""
+Contains the function "tikhonov", an interface to the class "Tikhonov".
+"""
 
-import numpy as np
-import scipy.linalg as scilin
-from time import time
-
-from inversion.solvers import Solver
+from inversion.solver import ClassicSolver
 
 
-class Tikhonov(Solver):
+def tikhonov(fwd, y, x0, c0, alpha, options):
+    tik = Tikhonov(fwd, y, x0, c0, alpha, options)
+    x_alpha = tik.solve()
+    return x_alpha
+
+
+class Tikhonov(ClassicSolver):
+
+    def __init__(self, fwd, y, x0, c0, alpha, options):
+        ClassicSolver.__init__(self, fwd, y, x0, c0, options)
+        self._alpha = alpha
 
     def solve(self):
-        alpha = self.options.setdefault("alpha", 1.)
-        a = self.mode.a()
-        b = self._b(a)
-        btb = b.T @ b
-        rhs = b.T @ (self.y - self.fwd(self.mean))
-        w = scilin.solve(btb + alpha * np.identity(btb.shape[0]), rhs, assume_a='pos')
-        u = self.mean + a @ w
-        return u
+        return self._regularized_solution(self._alpha)
