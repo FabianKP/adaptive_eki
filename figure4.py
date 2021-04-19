@@ -12,9 +12,9 @@ from inversion import *
 # YOU CAN ADAPT THESE PARAMETERS
 use_ray = True
 snr = 10.
-alpha0 = 1
+alpha0 = 1.
 tau = 1.2
-h = 1e-3
+h = 0.01
 scaling_factor = 0.25
 j_values = [100, 500, 1000, 2000, 3000, 5000, 8000]
 
@@ -33,21 +33,24 @@ print(f"Measurement dimension: m={m}")
 
 # Set up x0 and c0
 x0 = np.zeros(n)
-c0 = ornstein_uhlenbeck(n, h)
+c0 = ornstein_uhlenbeck(n1, n2, h)
+print("Computing SVD of c0...")
+c0_root, evals, evecs = matrix_sqrt(c0)
+print("...done.")
 
 # determine a good value for the regularization parameter alpha using the discrepancy principle
 # and Tikhonov regularization
 options = {"parallel": use_ray, "alpha": alpha0, "delta": delta, "tau": tau}
-x_tik, alpha = iterative_tikhonov(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
+x_tik, alpha = iterative_tikhonov(fwd=fwd, y=y_hat, x0=x0, c0_root=c0_root, delta=delta, options=options)
 im_tik = np.reshape(x_tik[-1], (n1, n2))
 
 # next, apply Nyström-EKI with different sample sizes
-options["alpha"] = alpha
 options["sampling"] = "nystroem"
 nys_images = []
 for j in j_values:
     options["j"] = j
-    x_nys = adaptive_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, delta=delta, options=options)
+    print(f"Sample size J={j}")
+    x_nys = direct_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha, options=options)
     im_nys = np.reshape(x_nys, (n1, n2))
     nys_images.append(im_nys)
 

@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.rcParams['text.usetex'] = True
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.linalg as scilin
 
 from inversion import *
 
@@ -20,7 +21,7 @@ j = 2000
 snr = 10.  # desired signal-to-noise ratio
 alpha1 = 1.   # minimal alpha
 c = 0.8 # sampling error is computed for alpha, alpha/c0, alpha/c0^2, ...
-h = 1e-3
+h = 0.01
 scaling_factor = 0.25 # determines the dimension of the problem
 
 # obtain data
@@ -38,7 +39,10 @@ print(f"Measurement dimension: m={m}")
 
 # Set up x0 and c0
 x0 = np.zeros(n)
-c0 = ornstein_uhlenbeck(n, h)
+c0 = ornstein_uhlenbeck(n1, n2, h)
+print("Computing SVD of c0...")
+c0_root, evals, evecs = matrix_sqrt(c0)
+print("...done.")
 
 # create list of alphas
 alphas = [alpha1]
@@ -47,30 +51,36 @@ for i in range(n_alpha-1):
     alpha = alpha * c
     alphas.append(alpha)
 
-prior_mean = np.zeros(n)
-cov = ornstein_uhlenbeck(n, h)
-
 # compute Tikhonov-regularized solutions
-options = {"parallel": use_ray, "j": j}
-traj_tik = tikhonov_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
+options = {"parallel": use_ray}
+traj_tik = tikhonov_list(fwd=fwd, y=y_hat, x0=x0, c0_root=c0_root, alphas=alphas, options=options)
 
 # computed direct EKI solutions
+options["j"] = j
+
 options["sampling"] = "standard"
+options["c0_root"] = c0_root
+print("Standard-EKI")
 traj_std  = eki_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 options["sampling"] = "nystroem"
+print("Nystroem-EKI")
 traj_nys = eki_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 options["sampling"] = "svd"
+options["c0_eigenvalues"] = evals
+options["c0_eigenvectors"] = evecs
+print("SVD-EKI")
 traj_svd = eki_list(fwd=fwd, y=y_hat, x0=x0, c0=c0, alphas=alphas, options=options)
 
 # compute approximation errors
-traj_std = np.array(traj_std)
-traj_nys = np.array(traj_nys)
-traj_svd = np.array(traj_svd)
+traj_tik = np.array(traj_tik).T
+traj_std = np.array(traj_std).T
+traj_nys = np.array(traj_nys).T
+traj_svd = np.array(traj_svd).T
 def approximation_error(traj_hat):
-    return np.linalg.norm(traj_hat - traj_tik, axis=1) / np.linalg.norm(x)
+    return np.linalg.norm(traj_hat - traj_tik, axis=0) / np.linalg.norm(x)
 e_std = approximation_error(traj_std)
-e_nys = approximation_error(traj_std)
-e_svd = approximation_error(traj_std)
+e_nys = approximation_error(traj_nys)
+e_svd = approximation_error(traj_svd)
 
 # plotting
 plt.plot(alphas, e_std, 'ro--', label="Standard-EKI")

@@ -7,7 +7,7 @@ import numpy as np
 from skimage.data import shepp_logan_phantom
 from skimage.transform import radon, rescale
 
-def simulate_measurement(snr, scaling_factor, ):
+def simulate_measurement(snr, scaling_factor):
     """
     Generates the Radon transform of the Shepp-Logan phantom and adds simulated noise with given signal-to-noise ratio
     :param snr: the desired signal-to-noise ratio
@@ -27,7 +27,9 @@ def simulate_measurement(snr, scaling_factor, ):
     m = y_im.size
     # create a noisy measurement with the given signal-to-noise ratio
     sigma = np.linalg.norm(y_im) / (snr * sqrt(m))
-    noise = sigma * np.random.randn(m)
+    standard_noise = np.random.randn(m)
+    # rescale noise to ensure given snr
+    noise = standard_noise * np.linalg.norm(y_im) / (snr * np.linalg.norm(standard_noise))
     y_hat_im = y_im + noise
     # rescale everything
     scale = sigma * sqrt(m)

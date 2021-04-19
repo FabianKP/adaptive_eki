@@ -15,10 +15,10 @@ from inversion import *
 
 # YOU CAN ADAPT THESE PARAMETERS
 use_ray = True  # toggles parallelization; set False for final experiment.
-alpha = 0.015
+alpha = 0.03
 snr = 10. # desired signal-to-noise ratio
 scaling_factor = 0.25 # determines the dimension; set to 0.4 for final experiment
-h = 1e-3
+h = 0.01
 
 # obtain data
 y_hat_im, x_im, fwd, delta = simulate_measurement(snr, scaling_factor)
@@ -35,18 +35,24 @@ print(f"Measurement dimension: m={m}")
 
 # Set up x0 and c0
 x0 = np.zeros(n)
-c0 = ornstein_uhlenbeck(n, h)
+c0 = ornstein_uhlenbeck(n1, n2, h)
+print("Computing SVD of c0...")
+c0_root, evals, evecs = matrix_sqrt(c0)
+print("...done.")
 
 # determine a good value for the regularization parameter alpha using the discrepancy principle
 # and Tikhonov regularization
-options = {"alpha": alpha, "parallel": use_ray}
-x_tik = tikhonov(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha, options=options)
+options = {"parallel": use_ray}
+x_tik = tikhonov(fwd=fwd, y=y_hat, x0=x0, c0_root=c0_root, alpha=alpha, options=options)
 
 # apply EKI
 traj_std = []
 traj_nys = []
 traj_svd = []
 sizes = [100, 500, 1000, 1500, 2000, 2500, 3000, 5000, 8000]
+options["c0_root"] = c0_root
+options["c0_eigenvalues"] = evals
+options["c0_eigenvectors"] = evecs
 for j in sizes:
     options["j"] = j
     print("Sample size: ", j)
@@ -62,10 +68,10 @@ for j in sizes:
 
 # compute approximation errors
 def approximation_error(x_hat):
-    return np.linalg.norm(x_hat - x_tik, axis=1) / np.linalg.norm(x)
-traj_std = np.array(traj_std)
-traj_nys = np.array(traj_nys)
-traj_svd = np.array(traj_svd)
+    return np.linalg.norm(x_hat - x_tik[:,np.newaxis], axis=0) / np.linalg.norm(x)
+traj_std = np.array(traj_std).T
+traj_nys = np.array(traj_nys).T
+traj_svd = np.array(traj_svd).T
 e_eki = approximation_error(traj_std)
 e_nys = approximation_error(traj_nys)
 e_svd = approximation_error(traj_svd)

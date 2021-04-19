@@ -8,35 +8,31 @@ import scipy.linalg as scilin
 
 
 class Solver:
-    def __init__(self, fwd, y, x0, c0, options=None):
-        c0, options = self._handle_input(x0, c0, options)
+    def __init__(self, fwd, y, x0, options=None):
+        options = self._handle_input(options)
         self._fwd = fwd
         self._y = y
         self._x0 = x0
         self._n = len(x0)
         self._m = len(y)
-        self._c0 = c0
         self._options = options
         parallel = options.setdefault("parallel", False)
         if parallel:
-            print("Using parallelization with Ray")
             from inversion.parallel_evaluations import _b_parallel
             def _b(a):
                 return _b_parallel(self._fwd, a)
             self._b = _b
 
-    def _handle_input(self, x0, cov, options):
+    def _handle_input(self, options):
         """
         If cov is None, it is replaced by the default np.identity(x0.size).
         Furthermore, if options is None, it is set to the empty dictionary.
         """
-        if cov is None:
-            cov = np.identity(x0.size)
         if options is None:
             options = {}
         else:
             assert isinstance(options, dict)
-        return cov, options
+        return options
 
     def _b(self, a):
         """
@@ -67,28 +63,39 @@ class Solver:
 
 class ClassicSolver(Solver):
 
-    def __init__(self, fwd, y, x0, c0, options=None):
-        Solver.__init__(self, fwd, y, x0, c0)
+    def __init__(self, fwd, y, x0, c0_root, options=None):
+        Solver.__init__(self, fwd, y, x0, options)
         # compute square-root of c0
-        print("Initializing classic solver")
-        d, u = scilin.eigh(c0)
-        dpos = d.clip(min=0.)
-        self._s = u * np.sqrt(dpos)
-        print("Done.")
+        self._s = c0_root
 
 
 class EnsembleSolver(Solver):
 
     def __init__(self, fwd, y, x0, c0, options=None):
-        Solver.__init__(self, fwd, y, x0, c0)
+        """
+        :param fwd:
+        :param y:
+        :param x0:
+        :param c0:
+        :param options: A dict that provides additional solver options.
+            -sampling: which type of sampling is used. Possible values are 'standard',
+            'nystroem' and 'svd'. Default is 'nystroem'. If sampling is set to 'standard',
+            the user has to provide the parameter c0_root.
+            If sampling is set to 'svd', the user has to provide c0_eigvals and c0_eigvecs
+        """
+        Solver.__init__(self, fwd, y, x0, options)
+        self._c0 = c0
         self._j = options.setdefault("j", 100)
-        self._sampling = options.setdefault("sampling", "standard")
+        self._sampling = options.setdefault("sampling", "nystroem")
         if self._sampling == "standard":
-            self._init_ensemble()
+            # for standard sampling, have to provide a square-root of c0
+            self._c0_root = options["c0_root"]
         elif self._sampling == "nystroem":
-            self._init_nystroem(c0)
+            pass
         elif self._sampling == "svd":
-            self._init_svd(c0)
+            # for svd sampling, have to provide eigenvectors and eigenvals of c0
+            self._c0_evals = options["c0_eigenvalues"]
+            self._c0_evecs = options["c0_eigenvectors"]
         else:
             raise NotImplementedError
 
@@ -97,6 +104,7 @@ class EnsembleSolver(Solver):
         Computes the factor a of the low-rank approximation a * a.T of self._c0.
         :return: The matrix a with shape (self._c0.shape[0], self._j).
         """
+        # the way in which a is generated depends on the chosen sampling scheme
         if self._sampling == "standard":
             ensemble = self._generate_ensemble()
             a = self._anomaly(ensemble)
@@ -108,48 +116,12 @@ class EnsembleSolver(Solver):
             raise NotImplementedError
         return a
 
-    def _init_ensemble(self):
-        """
-        Initializes the ensemble-based sampling, by computing the symmetric square-root _s of _c0.
-        That is, this method sets the attribute _s such that _s * _s.T = _c0.
-        """
-        d, u = scilin.eigh(self._c0)
-        dclip = d.clip(min=0.0)
-        self._s = u * np.sqrt(dclip)
-
-    def _init_nystroem(self, cov):
-        """
-        Computes a factorized low-rank approximation using the Nyström method, such that
-        a_nys a_nys.T =  _c0 * q * (q.T * _c0 * q)^(-1) * q.T * _c0,
-        where q is a suitable sketching matrix.
-        Sets the attribute a_nys, which is a (n,n)-matrix.
-        """
-        x = np.random.randn(self._n, self._j)
-        y = self._c0 @ x
-        q, r = np.linalg.qr(y)
-        b1 = self._c0 @ q
-        b2 = q.T @ b1
-        c = np.linalg.cholesky(b2)
-        ft = scilin.solve_triangular(c.T, b1.T)
-        self._a_nys = ft.T
-
-    def _init_svd(self, cov):
-        """
-        Initializes the SVD-based sampling, by computing the singular value decomposition of _c0.
-        Sets the attributes _eigvals and _eigvecs, where _eigvals is a vector that contains the eigenvalues of _c0 in
-        ascending order, and _eigvecs is a matrix with the same shape as _c0, whose columns are given by the
-        corresponding eigenvectors.
-        """
-        d, u = scilin.eigh(cov)
-        self.eigvals = d.clip(min=0.0)
-        self.eigvecs = u
-
     def _generate_ensemble(self):
         """
         Generates an ensemble of size 'j' with distribution normal(0,_s * _s.T)
         :return: A numpy matrix of size (_s.shape[0], _j).
         """
-        return self._s @ np.random.randn(self._n, self._j)
+        return self._c0_root @ np.random.randn(self._n, self._j)
 
     def _anomaly(self, ensemble):
         """
@@ -164,10 +136,18 @@ class EnsembleSolver(Solver):
 
     def _nystroem(self):
         """
-        Returns a Nyström approximation of rank _j
-        :return: A matrix with shape (_c0.shape[0], _j).
+        Computes a factorized low-rank approximation using the Nyström method, such that
+        a_nys a_nys.T =  _c0 * q * (q.T * _c0 * q)^(-1) * q.T * _c0,
+        where q is a suitable sketching matrix.
         """
-        return self._a_nys[:,:self._j]
+        x = np.random.randn(self._n, self._j)
+        y = self._c0 @ x
+        q, r = np.linalg.qr(y)
+        d, u = scilin.eigh(q.T @ self._c0 @ q)
+        dclip = d.clip(min=0.)  # removes negative eigenvalues that might have slipped in through numerical errors
+        sqrtinv_qtcq = (u * np.divide(1, np.sqrt(dclip), out=np.zeros_like(dclip), where=dclip != 0))
+        a_nys = self._c0 @ q @ sqrtinv_qtcq
+        return a_nys
 
     def _tsvd(self):
         """
@@ -175,5 +155,5 @@ class EnsembleSolver(Solver):
         st * st.T approximates _c0
         :return: A matrix of shape (_c0.shape[0], _j).
         """
-        st = self.eigvecs[:, -self._j:] * np.sqrt(self.eigvals[-self._j:])
+        st = self._c0_evecs[:, -self._j:] * np.sqrt(self._c0_evals[-self._j:])
         return st
