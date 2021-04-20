@@ -23,11 +23,11 @@ def simulate_measurement(snr, scaling_factor):
     n_1, n_2 = x_im.shape
     # compute the Radon transform of the Shepp-Logan phantom
     theta = np.linspace(0., 180., max(n_1, n_2), endpoint=False)
-    y_im = radon(x_im, theta=theta, circle=False).flatten()
+    y_im = radon(x_im, theta=theta, circle=False)
     m = y_im.size
     # create a noisy measurement with the given signal-to-noise ratio
     sigma = np.linalg.norm(y_im) / (snr * sqrt(m))
-    standard_noise = np.random.randn(m)
+    standard_noise = np.random.randn(*y_im.shape)
     # rescale noise to ensure given snr
     noise = standard_noise * np.linalg.norm(y_im) / (snr * np.linalg.norm(standard_noise))
     y_hat_im = y_im + noise
@@ -42,4 +42,4 @@ def simulate_measurement(snr, scaling_factor):
     # compute delta
     delta = np.linalg.norm(y_hat_im - y_im)
 
-    return y_hat_im, x_im, fwd, delta
+    return y_im, y_hat_im, x_im, fwd, delta

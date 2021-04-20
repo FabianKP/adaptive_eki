@@ -19,7 +19,7 @@ scaling_factor = 0.25
 j_values = [100, 500, 1000, 2000, 3000, 5000, 8000]
 
 # obtain data
-y_hat_im, x_im, fwd, delta = simulate_measurement(snr, scaling_factor)
+y_im, y_hat_im, x_im, fwd, delta = simulate_measurement(snr, scaling_factor)
 n1, n2 = x_im.shape
 x = x_im.flatten()
 y_hat = y_hat_im.flatten()

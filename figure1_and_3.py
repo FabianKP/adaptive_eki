@@ -19,12 +19,20 @@ h = 0.01               # correlation length for the prior covariance
 scaling_factor = 0.25   # this factor determines the size of the used image and thereby the parameter and measurement dimension
 
 # obtain data
-y_hat_im, x_im, fwd, delta = simulate_measurement(snr, scaling_factor)
+y_im, y_hat_im, x_im, fwd, delta = simulate_measurement(snr, scaling_factor)
 n1, n2 = x_im.shape
 x = x_im.flatten()
 y_hat = y_hat_im.flatten()
 n = x.size
 m = y_hat.size
+
+# plot the ground truth, the measurement, and the noisy data
+plt.imshow(x_im, cmap="gray")
+plt.savefig("out/figure1.png", bbox_inches='tight')
+plt.imshow(y_im, cmap="gray")
+plt.savefig("out/figure3a.png", bbox_inches='tight')
+plt.imshow(y_hat_im, cmap="gray")
+plt.savefig("out/figure3b.png", bbox_inches='tight')
 
 # display basic info
 print(f"Image size: {n1}x{n2}")
@@ -59,9 +67,7 @@ x_nys = direct_eki(fwd=fwd, y=y_hat, x0=x0, c0=c0, alpha=alpha_delta, options=op
 # plot the original image and the reconstructions
 im_std = np.reshape(x_std, (n1, n2))
 im_nys = np.reshape(x_nys, (n1, n2))
-plt.imshow(x_im, cmap="gray")
-plt.savefig("out/figure1.png", bbox_inches='tight')
 plt.imshow(im_std, cmap="gray")
-plt.savefig("out/figure3a.png", bbox_inches='tight')
+plt.savefig("out/figure3c.png", bbox_inches='tight')
 plt.imshow(im_nys, cmap="gray")
-plt.savefig("out/figure3b.png", bbox_inches='tight')
+plt.savefig("out/figure3d.png", bbox_inches='tight')
