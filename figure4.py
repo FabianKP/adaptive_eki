@@ -86,7 +86,7 @@ def plot_figure4():
         plt.savefig(f"out/figure4_nys_{j}.png", bbox_inches="tight", pad_inches=0)
 
 
-#compute_figure4()
+compute_figure4()
 plot_figure4()
 
 

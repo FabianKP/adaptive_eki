@@ -106,7 +106,7 @@ def plot_figure5():
     plt.plot(sizes, e_eki, 'ro--', label="Standard-EKI")
     plt.plot(sizes, e_nys, 'bx--', label="Nyström-EKI")
     plt.plot(sizes, e_svd, 'gv--', label="SVD-EKI")
-    plt.xlabel("J")
+    plt.xlabel(r"$J$")
     plt.ylabel(r"$e_\mathrm{app}$")
     plt.legend(loc="upper right")
     plt.savefig("out/figure5.png", bbox_inches='tight')

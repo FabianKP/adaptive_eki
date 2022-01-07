@@ -109,5 +109,5 @@ def plot_figure2():
     plt.savefig("out/figure2.png", bbox_inches='tight')
 
 
-#compute_figure2()
+compute_figure2()
 plot_figure2()
